@@ -12,6 +12,9 @@ public:
 	virtual const Config& GetConfig(void) const = 0;
 	virtual void Open(unsigned int card, unsigned int device) = 0;
 	virtual void SetConfig(const Config& config) = 0;
+	virtual void Start(void) = 0;
+	virtual void Reset(void) = 0;
+	virtual void Prepare(void) = 0;
 };
 
 } /* namespace tinyalsa */

@@ -17,6 +17,9 @@ public:
 	void Open(unsigned int card, unsigned int device);
 	size_t Read(void* frame_array, size_t frame_count);
 	void SetConfig(const tinyalsa::Config& config);
+	void Start(void);
+	void Reset(void);
+	void Prepare(void);
 protected:
 };
 
@@ -69,6 +72,18 @@ size_t InputPcm::Read(void* frame_array, size_t frame_count) {
 
 void InputPcm::SetConfig(const tinyalsa::Config& config) {
 	(void) config;
+}
+
+void InputPcm::Start(void) {
+
+}
+
+void InputPcm::Reset(void) {
+
+}
+
+void InputPcm::Prepare(void) {
+
 }
 
 } /* namespace */
