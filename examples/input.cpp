@@ -8,8 +8,6 @@ int main(void) {
 
 	input_pcm->Open(0, 0);
 
-	input_pcm->Close();
-
 	return EXIT_SUCCESS;
 }
 
