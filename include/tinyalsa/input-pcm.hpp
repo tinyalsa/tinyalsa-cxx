@@ -3,17 +3,18 @@
 
 #include <tinyalsa/pcm.hpp>
 
+#include <memory>
 #include <cstdlib>
 
 namespace tinyalsa {
 
 class InputPcm : public Pcm {
 public:
-	static InputPcm* Create(void);
+	static std::shared_ptr<InputPcm> Create(void);
 	virtual ~InputPcm(void);
-	virtual Config* GetConfig(void) const = 0;
+	virtual const Config& GetConfig(void) const = 0;
 	virtual size_t Read(void* frame_array, size_t frame_count) = 0;
-	virtual void SetConfig(const Config* config) = 0;
+	virtual void SetConfig(const Config& config) = 0;
 };
 
 } /* namespace tinyalsa */

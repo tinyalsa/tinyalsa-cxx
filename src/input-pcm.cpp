@@ -8,14 +8,15 @@ namespace {
 
 class InputPcm final : public tinyalsa::InputPcm {
 	int fd;
+	std::shared_ptr<tinyalsa::Config> config;
 public:
 	InputPcm(void);
 	~InputPcm(void);
 	void Close(void);
-	tinyalsa::Config* GetConfig(void) const;
+	const tinyalsa::Config& GetConfig(void) const;
 	void Open(unsigned int card, unsigned int device);
 	size_t Read(void* frame_array, size_t frame_count);
-	void SetConfig(const tinyalsa::Config* config);
+	void SetConfig(const tinyalsa::Config& config);
 protected:
 };
 
@@ -23,8 +24,9 @@ protected:
 
 namespace tinyalsa {
 
-InputPcm* InputPcm::Create(void) {
-	return new ::InputPcm();
+std::shared_ptr<InputPcm> InputPcm::Create(void) {
+	std::shared_ptr<InputPcm> input_pcm(new ::InputPcm);
+	return input_pcm;
 }
 
 InputPcm::~InputPcm(void) {
@@ -36,7 +38,7 @@ InputPcm::~InputPcm(void) {
 namespace {
 
 InputPcm::InputPcm(void) : fd(-1) {
-
+	config = tinyalsa::Config::Create();
 }
 
 InputPcm::~InputPcm(void) {
@@ -50,8 +52,8 @@ void InputPcm::Close(void) {
 	}
 }
 
-tinyalsa::Config* InputPcm::GetConfig(void) const {
-	return tinyalsa::Config::Create();
+const tinyalsa::Config& InputPcm::GetConfig(void) const {
+	return *config;
 }
 
 void InputPcm::Open(unsigned int card, unsigned int device) {
@@ -65,7 +67,7 @@ size_t InputPcm::Read(void* frame_array, size_t frame_count) {
 	return 0;
 }
 
-void InputPcm::SetConfig(const tinyalsa::Config* config) {
+void InputPcm::SetConfig(const tinyalsa::Config& config) {
 	(void) config;
 }
 

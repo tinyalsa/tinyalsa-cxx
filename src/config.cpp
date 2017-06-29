@@ -18,8 +18,9 @@ public:
 
 namespace tinyalsa {
 
-Config* Config::Create(void) {
-	return new ::Config();
+std::shared_ptr<Config> Config::Create(void) {
+	std::shared_ptr<Config> config(new ::Config);
+	return config;
 }
 
 Config::~Config(void) {

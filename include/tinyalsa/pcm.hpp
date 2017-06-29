@@ -9,9 +9,9 @@ class Pcm {
 public:
 	virtual ~Pcm(void);
 	virtual void Close(void) = 0;
-	virtual Config* GetConfig(void) const = 0;
+	virtual const Config& GetConfig(void) const = 0;
 	virtual void Open(unsigned int card, unsigned int device) = 0;
-	virtual void SetConfig(const Config* config) = 0;
+	virtual void SetConfig(const Config& config) = 0;
 };
 
 } /* namespace tinyalsa */
