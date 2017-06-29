@@ -31,3 +31,5 @@
 *.out
 *.app
 examples/input
+
+CMakeLists\.txt\.user
