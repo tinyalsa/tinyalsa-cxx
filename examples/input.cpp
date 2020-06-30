@@ -1,13 +1,14 @@
-#include <tinyalsa/input-pcm.hpp>
+#include <tinyalsa/interleaved_reader.hpp>
 
 #include <cstdlib>
 
-int main(void) {
+int main()
+{
+  namespace snd = tinyalsa;
 
-	auto input_pcm = tinyalsa::InputPcm::Create();
+  snd::interleaved_pcm_reader pcm_reader;
 
-	input_pcm->Open(0, 0);
+  pcm_reader.open();
 
-	return EXIT_SUCCESS;
+  return EXIT_SUCCESS;
 }
-

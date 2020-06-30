@@ -1,5 +1,20 @@
-cmake_minimum_required(VERSION 2.8.11)
+cmake_minimum_required(VERSION 3.8.2)
 
-add_executable("input" "input.cpp")
+function(add_tinyalsa_example example)
 
-target_link_libraries("input" "tinyalsa-cxx")
+  set(target tinyalsa_example_${example})
+
+  add_executable(${target} ${ARGN})
+
+  target_link_libraries(${target} PRIVATE tinyalsa-cxx)
+
+  target_compile_options(${target} PRIVATE ${tinyalsa_cxxflags})
+
+  set_target_properties(${target}
+    PROPERTIES
+      RUNTIME_OUTPUT_DIRECTORY "${PROJECT_BINARY_DIR}"
+      OUTPUT_NAME "${example}")
+
+endfunction(add_tinyalsa_example example)
+
+add_tinyalsa_example("input" "input.cpp")
