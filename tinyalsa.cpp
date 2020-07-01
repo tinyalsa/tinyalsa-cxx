@@ -3,7 +3,6 @@
 #include <algorithm>
 #include <new>
 #include <type_traits>
-#include <vector>
 
 #include <dirent.h>
 #include <errno.h>
@@ -24,14 +23,6 @@ namespace {
 
 /// The type used to identify hardware parameters.
 using parameter_name = int;
-
-/// Indicates the number of elements
-/// in a mask. Not to be considered with
-/// the number of physical bits in the structure.
-inline constexpr size_type mask_bits_count()
-{
-  return sizeof(snd_mask::bits) / sizeof(snd_mask::bits[0]);
-}
 
 /// Represents an indexed mask parameter.
 ///
@@ -451,6 +442,61 @@ const char* get_error_description(int error) noexcept
   }
 }
 
+//=====================//
+// Section: POD Buffer //
+//=====================//
+
+/// A simple buffer for POD type data.
+///
+/// TODO : Check the impact of multiple instantiations
+/// on overall binary size.
+///
+/// @tparam element_type The type of the element
+/// stored in the buffer.
+template <typename element_type>
+struct pod_buffer final
+{
+  /// The array of elements.
+  element_type* data = nullptr;
+  /// The number of elements in the buffer.
+  size_type size = 0;
+  /// Constructs an empty buffer.
+  constexpr pod_buffer() noexcept : data(nullptr), size(0) {}
+  /// Moves a buffer from one variable to another.
+  ///
+  /// @param other The variable to be moved.
+  inline constexpr pod_buffer(pod_buffer&& other) noexcept
+    : data(other.data),
+      size(other.size)
+  {
+    other.data = nullptr;
+    other.size = 0;
+  }
+  /// Releases memory allocated by the buffer.
+  ~pod_buffer()
+  {
+    std::free(data);
+    data = nullptr;
+    size = 0;
+  }
+  /// Adds an element to the end of the buffer.
+  ///
+  /// @param e The element to add to the end of the buffer.
+  ///
+  /// @return True on success, false on failure.
+  bool emplace_back(element_type&& e) noexcept
+  {
+    auto* tmp = (element_type*) std::realloc(data, (size + 1) * sizeof(element_type));
+    if (!tmp) {
+      return false;
+    }
+    data = tmp;
+    size++;
+    data[size - 1] = std::move(e);
+    return true;
+  }
+};
+
 //=============================//
 // Section: Interleaved Reader //
 //=============================//
@@ -756,7 +802,7 @@ private:
   /// @param name The filename to be parsed.
   ///
   /// @return True on a match, false on failure.
-  constexpr bool parse(const char* name) noexcept;
+  bool parse(const char* name) noexcept;
   /// Indicates if a character is a decimal number or not.
   ///
   /// @return True if it is a decimal character, false otherwise.
@@ -775,7 +821,7 @@ private:
   }
 };
 
-constexpr bool parsed_name::parse(const char* name) noexcept
+bool parsed_name::parse(const char* name) noexcept
 {
   auto name_length = strlen(name);
   if (!name_length) {
@@ -838,7 +884,7 @@ class pcm_list_impl final
 {
   friend pcm_list;
   /// The array of information instances.
-  std::vector<pcm_info> info_vec;
+  pod_buffer<pcm_info> info_buffer;
 };
 
 pcm_list::pcm_list() noexcept : self(nullptr)
@@ -887,9 +933,7 @@ pcm_list::pcm_list() noexcept : self(nullptr)
       continue;
     }
 
-    try {
-      self->info_vec.emplace_back(info_result.unwrap());
-    } catch (...) {
+    if (!self->info_buffer.emplace_back(info_result.unwrap())) {
       break;
     }
   }
@@ -907,12 +951,12 @@ pcm_list::~pcm_list()
 
 const pcm_info* pcm_list::data() const noexcept
 {
-  return self ? self->info_vec.data() : nullptr;
+  return self ? self->info_buffer.data : nullptr;
 }
 
 size_type pcm_list::size() const noexcept
 {
-  return self ? self->info_vec.size() : 0;
+  return self ? self->info_buffer.size : 0;
 }
 
 } // namespace tinyalsa

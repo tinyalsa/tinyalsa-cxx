@@ -316,7 +316,7 @@ public:
   ///
   /// @return On success, zero is returned.
   /// On failure, a copy of errno is returned.
-  virtual result prepare() noexcept;
+  result prepare() noexcept;
   /// Starts the PCM. This can have different
   /// meanings depending on whether the PCM is
   /// a capture device or a playback device.
@@ -332,7 +332,7 @@ public:
   ///
   /// @return On success, zero is returned.
   /// On failure, a copy of errno is returned.
-  virtual result start() noexcept;
+  result start() noexcept;
   /// Stops either the playback or capture loop
   /// of the audio device. Any buffered audio that
   /// exist at the point of calling this function
@@ -340,7 +340,7 @@ public:
   ///
   /// @return On success, zero is returned.
   /// On failure, a copy of errno is returned instead.
-  virtual result drop() noexcept;
+  result drop() noexcept;
   /// Opens a capture PCM.
   ///
   /// @param card The index of the card to open the PCM from.
