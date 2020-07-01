@@ -1,20 +1,19 @@
 # tinyalsa-cxx
 
-A pure C++ ALSA library.
+A paper-thin C++ library for interfacing with ALSA.
 
-This project was started to provide a C++ way of interfacing to ALSA in the Linux kernel, an alternative to the original TinyALSA C library.
+### Examples
 
-This project does not rely on the original TinyALSA C library in any way, and they may both be installed.
+Reading information on a PCM.
 
-This project does not intend to replace the orignal TinyALSA implementation.
+```cxx
+tinyalsa::pcm pcm;
 
-Use this project if:
+auto open_result = pcm.open_capture_device();
+if (open_result.failed()) {
+  std::cerr << open_result << std::endl;
+  return;
+}
 
-- You want a more lean alternative to alsa-lib
-- You want to use features of the C++ language like namespaces, exceptions and automatic memory management.
-
-Do not use this project if:
-
-- The project you're using it for is written in C (use the original TinyALSA, instead).
-- The project you're using it for depends on having ALSA configuration files.
-
+std::cout << pcm.get_info();
+```
