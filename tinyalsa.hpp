@@ -122,8 +122,8 @@ static constexpr size_type invalid_subdevice() noexcept
 enum class sample_format
 {
   s8,
-  s16le,
-  s16be,
+  s16_le,
+  s16_be,
   s18_3le,
   s18_3be,
   s20_3le,
@@ -131,16 +131,55 @@ enum class sample_format
   s24_3le,
   s24_3be,
   s24_le,
+  s24_be,
+  s32_le,
+  s32_be,
   u8,
-  u16le,
-  u16be,
+  u16_le,
+  u16_be,
   u18_3le,
   u18_3be,
   u20_3le,
   u20_3be,
   u24_3le,
   u24_3be,
-  u24_le
+  u24_le,
+  u24_be,
+  u32_le,
+  u32_be
+};
+
+/// Used to query parameters about a certain
+/// sample format.
+///
+/// @tparam sf The sample format to get the parameters for.
+template <sample_format sf>
+struct sample_traits final { };
+
+template <>
+struct sample_traits<sample_format::s8> final
+{
+  bool is_signed() noexcept { return true; }
+};
+
+/// Enumerates the several possible
+/// modes of accessing sample data from a PCM.
+enum class sample_access
+{
+  /// Interleaved sample buffers.
+  /// Samples of a frame appear next
+  /// to each other in a single frame.
+  /// Only one audio buffer is required.
+  interleaved,
+  /// Non interleaved sample buffers.
+  /// Samples for a channel are separated
+  /// into distinct buffers. Usually at least
+  /// one or two audio buffers are required.
+  non_interleaved,
+  /// Memory mapped interleaved buffers.
+  mmap_interleaved,
+  /// Memory mapped non-interleaved buffers.
+  mmap_non_interleaved,
 };
 
 /// Enumerates the known PCM classes.
@@ -169,19 +208,6 @@ enum class pcm_subclass
   multi_channel_mix
 };
 
-/// Used to query parameters about a certain
-/// sample format.
-///
-/// @tparam sf The sample format to get the parameters for.
-template <sample_format sf>
-struct sample_traits final { };
-
-template <>
-struct sample_traits<sample_format::s8> final
-{
-  bool is_signed() noexcept { return true; }
-};
-
 /// Used to describe the configuration
 /// of a PCM device.
 struct pcm_config final
@@ -195,7 +221,7 @@ struct pcm_config final
   /// The total number of periods.
   size_type period_count = 2;
   /// The format for one sample.
-  sample_format format = sample_format::s16le;
+  sample_format format = sample_format::s16_le;
   /// The number of frames to buffer
   /// before starting playback or capture.
   size_type start_threshold = 0;
@@ -278,8 +304,6 @@ public:
   /// @return On success, zero is returned.
   /// On failure, a copy of errno is returned.
   virtual result prepare() noexcept;
-  /// Applys a configuration to a PCM.
-  result setup(const pcm_config& config = pcm_config()) noexcept;
   /// Starts the PCM. This can have different
   /// meanings depending on whether the PCM is
   /// a capture device or a playback device.
@@ -316,6 +340,14 @@ public:
   /// @param device The index of the device to open the PCM from.
   /// @param non_blocking Whether or not the PCM should be opened in non-blocking mode.
   result open_playback_device(size_type card = 0, size_type device = 0, bool non_blocking = true) noexcept;
+protected:
+  /// Applys a configuration to a PCM.
+  ///
+  /// @param access The access mode to assign the PCM.
+  /// This affects what read and write operations are available.
+  ///
+  /// @param is_capture Whether or not the PCM is a capture device.
+  result setup(const pcm_config& config, sample_access access, bool is_capture) noexcept;
 };
 
 class interleaved_reader
@@ -343,7 +375,15 @@ public:
   /// @param non_blocking Whether or not the call
   /// should block if the device is not available.
   result open(size_type card = 0, size_type device = 0, bool non_blocking = false) noexcept;
-
+  /// Sets up the PCM with a given config.
+  ///
+  /// @param config The config to setup the PCM with.
+  /// It's perfectly valid to leave out this parameter
+  /// and use the default configuration.
+  inline result setup(const pcm_config& config = pcm_config()) noexcept
+  {
+    return pcm::setup(config, sample_access::interleaved, true /* is capture */);
+  }
   generic_result<size_type> read_unformatted(void* frames, size_type frame_count) noexcept override;
 };
 

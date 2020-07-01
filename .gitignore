@@ -1,1 +1,6 @@
 build
+*.o
+*.a
+examples/pcminfo
+examples/pcmlist
+examples/interleaved_reader
