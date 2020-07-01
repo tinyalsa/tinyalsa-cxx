@@ -19,3 +19,4 @@ endfunction(add_tinyalsa_example example)
 
 add_tinyalsa_example("interleaved_reader" "interleaved_reader.cpp")
 add_tinyalsa_example("pcminfo" "pcminfo.cpp")
+add_tinyalsa_example("pcmlist" "pcmlist.cpp")

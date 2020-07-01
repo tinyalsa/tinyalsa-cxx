@@ -3,7 +3,9 @@
 #include <algorithm>
 #include <new>
 #include <ostream>
+#include <vector>
 
+#include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <sound/asound.h>
@@ -310,6 +312,228 @@ result pcm_impl::open_by_path(const char* path, bool non_blocking) noexcept
   } else {
     return result { 0 };
   }
+}
+
+//===================//
+// Section: PCM list //
+//===================//
+
+namespace {
+
+/// A wrapper around a directory pointer
+/// that closes the directory when it goes out of scope.
+struct dir_wrapper final
+{
+  /// A pointer to the opened directory.
+  DIR* ptr = nullptr;
+  /// Casts the wrapper to a directory pointer.
+  ///
+  /// @return The directory pointer.
+  inline operator DIR* () noexcept
+  {
+    return ptr;
+  }
+  /// Closes the directory if it was opened.
+  ~dir_wrapper()
+  {
+    if (ptr) {
+      closedir(ptr);
+    }
+  }
+  /// Opens a directory.
+  ///
+  /// @param path The path of the directory to open.
+  ///
+  /// @return True on success, false on failure.
+  bool open(const char* path) noexcept
+  {
+    ptr = opendir(path);
+    return !!ptr;
+  }
+};
+
+/// Represents a PCM name that was parsed
+/// from a directory entry.
+struct parsed_name final
+{
+  /// Whether or not the name is valid.
+  bool valid = false;
+  /// The index of the card.
+  size_type card = 0;
+  /// The index of the device.
+  size_type device = 0;
+  /// Whether or not it's a capture PCM.
+  bool is_capture = false;
+  /// Constructs a new parsed name instance.
+  ///
+  /// @param name A pointer to the name to parse.
+  constexpr parsed_name(const char* name) noexcept
+  {
+    valid = parse(name);
+  }
+private:
+  /// Parses a name given to the constructor.
+  ///
+  /// @param name The filename to be parsed.
+  ///
+  /// @return True on a match, false on failure.
+  constexpr bool parse(const char* name) noexcept;
+  /// Indicates if a character is a decimal number or not.
+  ///
+  /// @return True if it is a decimal character, false otherwise.
+  static constexpr bool is_dec(char c) noexcept
+  {
+    return (c >= '0') && (c <= '9');
+  }
+  /// Parses a decimal number.
+  ///
+  /// @param c The character to convert into a decimal number.
+  ///
+  /// @return The resultant decimal number.
+  constexpr size_type to_dec(char c) noexcept
+  {
+    return size_type(c - '0');
+  }
+};
+
+constexpr bool parsed_name::parse(const char* name) noexcept
+{
+  auto name_length = strlen(name);
+  if (!name_length) {
+    return false;
+  }
+
+  if ((name[0] != 'p')
+   || (name[1] != 'c')
+   || (name[2] != 'm')
+   || (name[3] != 'C')) {
+    return false;
+  }
+
+  size_type d_pos = name_length;
+
+  for (size_type i = 4; i < name_length; i++) {
+    if (name[i] == 'D') {
+      d_pos = i;
+      break;
+    }
+  }
+
+  if (d_pos >= name_length) {
+    return false;
+  }
+
+  if (name[name_length - 1] == 'c') {
+    is_capture = true;
+  } else if (name[name_length - 1] == 'p') {
+    is_capture = false;
+  } else {
+    return false;
+  }
+
+  device = 0;
+  card = 0;
+
+  for (size_type i = 4; i < d_pos; i++) {
+    if (!is_dec(name[i])) {
+      return false;
+    }
+    card *= 10;
+    card += to_dec(name[i]);
+  }
+
+  for (size_type i = d_pos + 1; i < (name_length - 1); i++) {
+    if (!is_dec(name[i])) {
+      return false;
+    }
+    device *= 10;
+    device += to_dec(name[i]);
+  }
+
+  return true;
+}
+
+} // namespace
+
+class pcm_list_impl final
+{
+  friend pcm_list;
+  /// The array of information instances.
+  std::vector<pcm_info> info_vec;
+};
+
+pcm_list::pcm_list() noexcept : self(nullptr)
+{
+  self = new (std::nothrow) pcm_list_impl();
+  if (!self) {
+    return;
+  }
+
+  dir_wrapper snd_dir;
+
+  if (!snd_dir.open("/dev/snd")) {
+    return;
+  }
+
+  dirent* entry = nullptr;
+
+  for (;;) {
+
+    entry = readdir(snd_dir);
+    if (!entry) {
+      break;
+    }
+
+    parsed_name name(entry->d_name);
+    if (!name.valid) {
+      continue;
+    }
+
+    result open_result;
+
+    pcm p;
+
+    if (name.is_capture) {
+      open_result = p.open_capture_device(name.card, name.device);
+    } else {
+      open_result = p.open_playback_device(name.card, name.device);
+    }
+
+    if (open_result.failed()) {
+      continue;
+    }
+
+    auto info_result = p.get_info();
+    if (info_result.failed()) {
+      continue;
+    }
+
+    try {
+      self->info_vec.emplace_back(info_result.unwrap());
+    } catch (...) {
+      break;
+    }
+  }
+}
+
+pcm_list::pcm_list(pcm_list&& other) noexcept : self(other.self)
+{
+  other.self = nullptr;
+}
+
+pcm_list::~pcm_list()
+{
+  delete self;
+}
+
+const pcm_info* pcm_list::data() const noexcept
+{
+  return self ? self->info_vec.data() : nullptr;
+}
+
+size_type pcm_list::size() const noexcept
+{
+  return self ? self->info_vec.size() : 0;
 }
 
 //============================//

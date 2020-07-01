@@ -347,6 +347,65 @@ public:
   generic_result<size_type> read_unformatted(void* frames, size_type frame_count) noexcept override;
 };
 
+class pcm_list_impl;
+
+/// This class is used for enumerating
+/// the PCMs available on the system.
+///
+/// The best way to use this class is to
+/// declare it in a function scope with a
+/// short life time. That way, the list is
+/// always up to date.
+class pcm_list final
+{
+  /// A pointer to the implementation data.
+  pcm_list_impl* self = nullptr;
+public:
+  /// Constructs the PCM list.
+  /// Internally, this constructor will discover the PCMs on the system.
+  pcm_list() noexcept;
+  /// Moves the PCM list from one variable to another.
+  ///
+  /// @param other The PCM list to move.
+  pcm_list(pcm_list&& other) noexcept;
+  /// Releases the memory allocated by the list.
+  ~pcm_list();
+  /// Indicates the number of PCMs in the list.
+  size_type size() const noexcept;
+  /// Accesses the array of PCM info instances.
+  ///
+  /// @return A pointer to the beginning of the PCM info array.
+  const pcm_info* data() const noexcept;
+  /// Accesses an entry from the list.
+  ///
+  /// @note This function does not perform boundary checking.
+  ///
+  /// @param index The index of the entry to access.
+  ///
+  /// @return A const-reference to the specified entry.
+  inline const pcm_info& operator [] (size_type index) const noexcept
+  {
+    return data()[index];
+  }
+  /// Accesses the beginning iterator of the list.
+  /// Used in range-based for loops.
+  ///
+  /// @return A pointer to the beginning of the list.
+  inline const pcm_info* begin() const noexcept
+  {
+    return data();
+  }
+  /// Accesses the ending iterator of the list.
+  /// Used in range-based for loops.
+  ///
+  /// @return A pointer to the end of the list.
+  /// This value should not be dereferenced.
+  inline const pcm_info* end() const noexcept
+  {
+    return data() + size();
+  }
+};
+
 /// Prints the result of an operation.
 /// If the result failed, then the error description
 /// is printed. If the result did not fail, then the value
