@@ -17,4 +17,5 @@ function(add_tinyalsa_example example)
 
 endfunction(add_tinyalsa_example example)
 
-add_tinyalsa_example("input" "input.cpp")
+add_tinyalsa_example("interleaved_reader" "interleaved_reader.cpp")
+add_tinyalsa_example("pcminfo" "pcminfo.cpp")
