@@ -1,7 +1,6 @@
 #ifndef TINYALSA_CXX_TINYALSA_HPP
 #define TINYALSA_CXX_TINYALSA_HPP
 
-#include <iosfwd>
 #include <utility>
 
 #include <cstddef>
@@ -197,6 +196,13 @@ enum class pcm_class
   digitizer
 };
 
+/// Converts a PCM class to a human-readable string.
+///
+/// @param c The PCM class to convert.
+///
+/// @return A human-readable string describing the PCM class.
+inline constexpr const char* to_string(pcm_class c) noexcept;
+
 /// Enumerates the known PCM sub-classes.
 enum class pcm_subclass
 {
@@ -207,6 +213,13 @@ enum class pcm_subclass
   /// Multi-channel subdevices are mixed together.
   multi_channel_mix
 };
+
+/// Converts a PCM subclass to a human-readable string.
+///
+/// @param subclass The PCM subclass to be converted.
+///
+/// @return A human-readable form of the subclass.
+inline constexpr const char* to_string(pcm_subclass subclass) noexcept;
 
 /// Used to describe the configuration
 /// of a PCM device.
@@ -451,27 +464,30 @@ public:
 /// is printed. If the result did not fail, then the value
 /// of the result is printed.
 ///
+/// @tparam stream_type The type of the stream being printed to.
 /// @tparam value_type The type of the value contained in the result structure.
 ///
 /// @param output The stream to print the result to.
 /// @param result The result to be printed.
 ///
 /// @return A reference to @p output.
-template <typename value_type>
-std::ostream& operator << (std::ostream& output, const generic_result<value_type>& res);
+template <typename stream_type, typename value_type>
+stream_type& operator << (stream_type& output, const generic_result<value_type>& res);
 
 /// Prints the error of a result.
 ///
 /// @param output The stream to print to.
 /// @param res The result to print the error of.
 ///
-///
 /// @return A reference to @p output.
-std::ostream& operator << (std::ostream& output, const result& res);
+template <typename stream_type>
+stream_type& operator << (stream_type& output, const result& res);
 
-std::ostream& operator << (std::ostream& output, pcm_class class_);
+template <typename stream_type>
+stream_type& operator << (stream_type& output, pcm_class class_);
 
-std::ostream& operator << (std::ostream& output, pcm_subclass subclass);
+template <typename stream_type>
+stream_type& operator << (stream_type& output, pcm_subclass subclass);
 
 /// Prints a PCM information structure to an output stream.
 ///
@@ -479,24 +495,85 @@ std::ostream& operator << (std::ostream& output, pcm_subclass subclass);
 /// @param info The PCM information to be printed.
 ///
 /// @return A reference to @p output.
-std::ostream& operator << (std::ostream& output, const pcm_info& info);
+template <typename stream_type>
+stream_type& operator << (stream_type& output, const pcm_info& info);
 
 // Template and inlined implementation below this point.
 
-namespace detail {
-
-std::ostream& write_error(std::ostream& output, int error);
-
-} // namespace detail
-
-template <typename value_type>
-std::ostream& operator << (std::ostream& output, const generic_result<value_type>& res)
+template <typename stream_type, typename value_type>
+stream_type& operator << (stream_type& output, const generic_result<value_type>& res)
 {
   if (res.failed()) {
-    return detail::write_error(output, res.error);
+    return output << get_error_description(res.error);
   } else {
     return output << res.value;
   }
+}
+
+template <typename stream_type>
+stream_type& operator << (stream_type& output, const result& res)
+{
+  return output << get_error_description(res.error);
+}
+
+template <typename stream_type>
+stream_type& operator << (stream_type& output, pcm_class class_)
+{
+  return output << to_string(class_);
+}
+
+template <typename stream_type>
+stream_type& operator << (stream_type& output, pcm_subclass subclass)
+{
+  return output << to_string(subclass);
+}
+
+template <typename stream_type>
+stream_type& operator << (stream_type& output, const pcm_info& info)
+{
+  output << "card      : " << info.card << '\n';
+  output << "device    : " << info.device << '\n';
+  output << "subdevice : " << info.subdevice << '\n';
+  output << "class     : " << info.class_ << '\n';
+  output << "subclass  : " << info.subclass << '\n';
+  output << "id        : " << info.id << '\n';
+  output << "name:     : " << info.name << '\n';
+  output << "subname   : " << info.subname << '\n';
+  output << "subdevices count     : " << info.subdevices_count << '\n';
+  output << "subdevices available : " << info.subdevices_available << '\n';
+  return output;
+}
+
+inline constexpr const char* to_string(pcm_class c) noexcept
+{
+  switch (c) {
+    case pcm_class::unknown:
+      break;
+    case pcm_class::generic:
+      return "Generic";
+    case pcm_class::multi_channel:
+      return "Multi-channel";
+    case pcm_class::modem:
+      return "Modem";
+    case pcm_class::digitizer:
+      return "Digitizer";
+  }
+
+  return "Unknown";
+}
+
+inline constexpr const char* to_string(pcm_subclass subclass) noexcept
+{
+  switch (subclass) {
+    case pcm_subclass::unknown:
+      break;
+    case pcm_subclass::generic_mix:
+      return "Generic Mix";
+    case pcm_subclass::multi_channel_mix:
+      return "Multi-channel Mix";
+  }
+
+  return "Unknown";
 }
 
 } // namespace tinyalsa

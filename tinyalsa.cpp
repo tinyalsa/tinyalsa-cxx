@@ -2,7 +2,6 @@
 
 #include <algorithm>
 #include <new>
-#include <ostream>
 #include <type_traits>
 #include <vector>
 
@@ -914,79 +913,6 @@ const pcm_info* pcm_list::data() const noexcept
 size_type pcm_list::size() const noexcept
 {
   return self ? self->info_vec.size() : 0;
-}
-
-//============================//
-// Section: Stream Operations //
-//============================//
-
-namespace detail {
-
-std::ostream& write_error(std::ostream& output, int error)
-{
-  return output << get_error_description(error);
-}
-
-} // namespace detail
-
-std::ostream& operator << (std::ostream& output, const result& res)
-{
-  return output << res.error_description();
-}
-
-std::ostream& operator << (std::ostream& output, pcm_class class_)
-{
-  switch (class_) {
-    case pcm_class::unknown:
-      output << "Unknown";
-      break;
-    case pcm_class::generic:
-      output << "Generic";
-      break;
-    case pcm_class::multi_channel:
-      output << "Multi-channel";
-      break;
-    case pcm_class::modem:
-      output << "Modem";
-      break;
-    case pcm_class::digitizer:
-      output << "Digitizer";
-      break;
-  }
-
-  return output;
-}
-
-std::ostream& operator << (std::ostream& output, pcm_subclass subclass)
-{
-  switch (subclass) {
-    case pcm_subclass::unknown:
-      output << "Unknown";
-      break;
-    case pcm_subclass::generic_mix:
-      output << "Generic Mix";
-      break;
-    case pcm_subclass::multi_channel_mix:
-      output << "Multi-channel Mix";
-      break;
-  }
-
-  return output;
-}
-
-std::ostream& operator << (std::ostream& output, const pcm_info& info)
-{
-  output << "card      : " << info.card << std::endl;
-  output << "device    : " << info.device << std::endl;
-  output << "subdevice : " << info.subdevice << std::endl;
-  output << "class     : " << info.class_ << std::endl;
-  output << "subclass  : " << info.subclass << std::endl;
-  output << "id        : " << info.id << std::endl;
-  output << "name:     : " << info.name << std::endl;
-  output << "subname   : " << info.subname << std::endl;
-  output << "subdevices count     : " << info.subdevices_count << std::endl;
-  output << "subdevices available : " << info.subdevices_available << std::endl;
-  return output;
 }
 
 } // namespace tinyalsa
